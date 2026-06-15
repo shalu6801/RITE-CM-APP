@@ -244,6 +244,11 @@ function consumeOtp(identity, otp) {
 
 // ─── App ────────────────────────────────────────────────────────────
 const app = express();
+// Render / most cloud hosts terminate TLS at an edge proxy and pass the real
+// client IP via X-Forwarded-For. Tell Express to trust the first hop so
+// express-rate-limit can key on the real IP instead of throwing
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+app.set("trust proxy", 1);
 app.use(express.json({ limit: "16kb" }));
 app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:5173", credentials: false }));
 
