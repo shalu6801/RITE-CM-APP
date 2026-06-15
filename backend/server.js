@@ -70,12 +70,22 @@ if (consoleMode) {
 let mailer = null;
 if (emailReady) {
   mailer = nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_APP_PASSWORD,
     },
+    connectionTimeout: 10000,  // 10s to open TCP connection
+    greetingTimeout: 10000,    // 10s for SMTP greeting
+    socketTimeout: 15000,      // 15s of inactivity
   });
+
+  // Boot pe SMTP test karo — logs mein turant pata chal jayega
+  mailer.verify()
+    .then(() => console.log("✅  Gmail SMTP ready"))
+    .catch((e) => console.error("❌  Gmail SMTP verify failed:", e.message));
 }
 
 async function sendEmailOtp(to, otp) {
