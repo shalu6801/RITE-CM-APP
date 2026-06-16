@@ -22,6 +22,7 @@ export default function FormPanel() {
   const autoFillModulesCovered = useUI((s) => s.autoFillModulesCovered);
   const autogenerateRegNo = useUI((s) => s.autogenerateRegNo);
   const selectCourse = useUI((s) => s.selectCourse);
+  const selectDuration = useUI((s) => s.selectDuration);
   const setPhoto = useUI((s) => s.setPhoto);
   const clearPhoto = useUI((s) => s.clearPhoto);
   const setPage = useUI((s) => s.setPage);
@@ -169,6 +170,7 @@ export default function FormPanel() {
               options={durations}
               placeholder="Pick a duration"
               onChange={(v) => setDraft("duration", v)}
+              onPick={(v) => selectDuration(v)}
               onAdd={async (v) => addSimple("duration", v)}
             />
           </Field>

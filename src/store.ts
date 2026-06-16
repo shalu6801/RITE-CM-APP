@@ -17,7 +17,7 @@ import {
   seedMasterDefaults,
   SETTINGS_ID,
 } from "./db";
-import { computeMarksSummary, emptyRecord, makeRegistrationNo, uid } from "./utils";
+import { computeMarksSummary, emptyRecord, makeRegistrationNo, moduleCountForDuration, uid } from "./utils";
 
 interface UIState {
   draft: StudentRecord;
@@ -51,6 +51,13 @@ interface UIState {
   autogenerateRegNo: () => Promise<void>;
   /** Pick a course from master data — auto-populates marksheet rows + modulesCovered. */
   selectCourse: (courseName: string) => Promise<void>;
+  /**
+   * Pick a duration. RITE convention: the duration determines how many of
+   * the chosen course's modules end up on the marksheet (1 mo → 1 module,
+   * 3 / 6 mo → 2, 9 mo → 3, 12 mo / 1 year → 4). If a course is already
+   * picked, the modules table is re-populated with the right slice.
+   */
+  selectDuration: (duration: string) => Promise<void>;
   setPhoto: (dataUrl: string) => void;
   clearPhoto: () => void;
 
@@ -184,16 +191,24 @@ export const useUI = create<UIState>((set, get) => ({
   async selectCourse(courseName) {
     set((state) => ({ draft: { ...state.draft, courseName, updatedAt: Date.now() } }));
     const course = await db.courses.where("name").equalsIgnoreCase(courseName).first();
-    const allSubjects = (course?.modules ?? []).flatMap((mod) =>
+    if (!course || !course.modules?.length) return;
+
+    // RITE convention: the duration the candidate is enrolled for determines
+    // how many of the course's modules end up on the marksheet. `limit === 0`
+    // means "no convention matched" — keep every module the course defines.
+    const limit = moduleCountForDuration(get().draft.duration);
+    const modulesToUse = limit > 0 ? course.modules.slice(0, limit) : course.modules;
+    const allSubjects = modulesToUse.flatMap((mod) =>
       mod.subjects.map((sub) => ({ ...sub, moduleName: mod.name })),
     );
-    if (!course || allSubjects.length === 0) return;
+    if (allSubjects.length === 0) return;
 
     const existing = get().draft.modules;
     const hasData = existing.some((m) => m.subject.trim() || m.marksObtained > 0);
     if (hasData) {
+      const sliceNote = limit > 0 ? ` (first ${limit} module${limit > 1 ? "s" : ""})` : "";
       const ok = window.confirm(
-        `This will replace the current modules table with the ${allSubjects.length} subjects defined for "${course.name}". Continue?`,
+        `This will replace the current modules table with the ${allSubjects.length} subjects defined for "${course.name}"${sliceNote}. Continue?`,
       );
       if (!ok) return;
     }
@@ -207,6 +222,43 @@ export const useUI = create<UIState>((set, get) => ({
     }));
     // Certificate's "Modules Covered" lists the SUBJECT names from every module
     // (matches what the "Auto-fill from modules table" button produces too).
+    const modulesCovered = allSubjects.map((s) => s.name).filter(Boolean).join(", ");
+    set((state) => ({
+      draft: { ...state.draft, modules: rows, modulesCovered, updatedAt: Date.now() },
+    }));
+  },
+
+  async selectDuration(duration) {
+    set((state) => ({ draft: { ...state.draft, duration, updatedAt: Date.now() } }));
+    const { draft } = get();
+    if (!draft.courseName) return;
+    const course = await db.courses.where("name").equalsIgnoreCase(draft.courseName).first();
+    if (!course || !course.modules?.length) return;
+
+    const limit = moduleCountForDuration(duration);
+    const modulesToUse = limit > 0 ? course.modules.slice(0, limit) : course.modules;
+    const allSubjects = modulesToUse.flatMap((mod) =>
+      mod.subjects.map((sub) => ({ ...sub, moduleName: mod.name })),
+    );
+    if (allSubjects.length === 0) return;
+
+    const existing = draft.modules;
+    const hasMarks = existing.some((m) => m.marksObtained > 0);
+    if (hasMarks) {
+      const sliceNote = limit > 0 ? ` (first ${limit} module${limit > 1 ? "s" : ""} of "${course.name}")` : ` of "${course.name}"`;
+      const ok = window.confirm(
+        `Changing duration to "${duration}" will replace the modules table with ${allSubjects.length} subjects${sliceNote} and reset marks. Continue?`,
+      );
+      if (!ok) return;
+    }
+
+    const rows: ModuleRow[] = allSubjects.map((s) => ({
+      id: uid(),
+      subject: s.name,
+      maxMarks: s.maxMarks,
+      marksObtained: 0,
+      moduleName: s.moduleName,
+    }));
     const modulesCovered = allSubjects.map((s) => s.name).filter(Boolean).join(", ");
     set((state) => ({
       draft: { ...state.draft, modules: rows, modulesCovered, updatedAt: Date.now() },

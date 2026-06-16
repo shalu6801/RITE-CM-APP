@@ -195,43 +195,80 @@ function SubjectTable({
     lineHeight: 1.25,
   };
 
-  const dynamicFontPt =
-    rows.length >= 12 ? Math.max(8, fontSize - 1.5) :
-    rows.length >= 9  ? Math.max(8.5, fontSize - 1) :
-    fontSize;
-
   if (rows.length === 0) return <div style={containerStyle} />;
 
-  return (
-    <div style={containerStyle}>
-      {rows.map((m, idx) => (
-        <div
-          key={m.id}
-          style={{
-            flex: "1 1 0",
-            minHeight: 0,
-            display: "flex",
-            alignItems: "stretch",
-            overflow: "hidden",
-          }}
-        >
-          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>{idx + 1}.</Cell>
+  // Group rows by moduleName in their original order. Each group renders as
+  // a bold module-name header row followed by its subject rows. Subjects
+  // entered manually (no moduleName) fall into a single anonymous bucket
+  // that renders without a header — keeps the legacy flat-list behaviour.
+  const groups: Array<{ moduleName: string; rows: ModuleRow[] }> = [];
+  const groupIndex = new Map<string, number>();
+  for (const row of rows) {
+    const key = row.moduleName ?? "";
+    let idx = groupIndex.get(key);
+    if (idx === undefined) {
+      idx = groups.length;
+      groupIndex.set(key, idx);
+      groups.push({ moduleName: key, rows: [] });
+    }
+    groups[idx].rows.push(row);
+  }
+  const headerCount = groups.reduce((a, g) => a + (g.moduleName ? 1 : 0), 0);
+  const totalRows = rows.length + headerCount;
+
+  const dynamicFontPt =
+    totalRows >= 14 ? Math.max(8, fontSize - 1.5) :
+    totalRows >= 11 ? Math.max(8.5, fontSize - 1) :
+    fontSize;
+
+  const flexRow: React.CSSProperties = {
+    flex: "1 1 0",
+    minHeight: 0,
+    display: "flex",
+    alignItems: "stretch",
+    overflow: "hidden",
+  };
+
+  let sno = 0;
+  const elements: React.ReactNode[] = [];
+  for (const group of groups) {
+    if (group.moduleName) {
+      elements.push(
+        <div key={`hdr-${group.moduleName}`} style={flexRow}>
+          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt} />
+          <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt} bold>
+            {group.moduleName}
+          </Cell>
+          <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt} />
+          <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt} />
+        </div>,
+      );
+    }
+    for (const m of group.rows) {
+      sno++;
+      elements.push(
+        <div key={m.id} style={flexRow}>
+          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>{sno}.</Cell>
           <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt}>{m.subject}</Cell>
           <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt}>{m.maxMarks || ""}</Cell>
           <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt}>{Number.isFinite(m.marksObtained) ? m.marksObtained : ""}</Cell>
-        </div>
-      ))}
-    </div>
-  );
+        </div>,
+      );
+    }
+  }
+
+  return <div style={containerStyle}>{elements}</div>;
 }
 
 function Cell({
-  col, fontSizePt, columnOffset, children,
+  col, fontSizePt, columnOffset, children, bold,
 }: {
   col: TableColumnConfig;
   fontSizePt: number;
   columnOffset?: { x: number; y: number };
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  /** Forces fontWeight to 700 — used by the module-name header rows. */
+  bold?: boolean;
 }) {
   const ofs = columnOffset && (columnOffset.x || columnOffset.y) ? columnOffset : null;
   const style: React.CSSProperties = {
@@ -240,7 +277,7 @@ function Cell({
     paddingRight: `${col.paddingRightMm}mm`,
     textAlign: col.align,
     fontSize: col.fontSize ? `${col.fontSize}pt` : `${fontSizePt}pt`,
-    fontWeight: col.fontWeight,
+    fontWeight: bold ? 700 : col.fontWeight,
     overflowWrap: "anywhere",
     wordBreak: "break-word",
     whiteSpace: "normal",
@@ -252,7 +289,9 @@ function Cell({
     // Subject column gets double line-spacing so wrapped subject text is
     // readable without compressing into the next row. Other columns keep
     // the table-default 1.25 so the page layout is undisturbed.
-    lineHeight: col.key === "subject" ? 2 : undefined,
+    // Subject column gets a 1.5 line-height for readable wrapping without
+    // making the table look gappy. Other columns inherit the table-default 1.25.
+    lineHeight: col.key === "subject" ? 1.5 : undefined,
   };
   return <div style={style}>{children}</div>;
 }

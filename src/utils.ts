@@ -88,6 +88,34 @@ export function deriveModulesCovered(modules: ModuleRow[]): string {
     .join(", ");
 }
 
+/**
+ * Maps a course duration string to the number of modules the marksheet should
+ * use. RITE's curriculum convention:
+ *
+ *   • 1 Month   → 1 module
+ *   • 3 Months  → 2 modules
+ *   • 6 Months  → 2 modules
+ *   • 9 Months  → 3 modules
+ *   • 12 Months → 4 modules     (alias: "1 Year")
+ *
+ * Returns 0 when the duration doesn't match any known bucket — callers treat
+ * 0 as "no limit" and keep every module the selected course defines.
+ */
+export function moduleCountForDuration(duration: string): number {
+  const d = (duration || "").toLowerCase().trim();
+  if (!d) return 0;
+  if (/year/.test(d)) return /^1\b/.test(d) ? 4 : 0;
+  const months = parseInt(d, 10);
+  switch (months) {
+    case 1:  return 1;
+    case 3:  return 2;
+    case 6:  return 2;
+    case 9:  return 3;
+    case 12: return 4;
+    default: return 0;
+  }
+}
+
 /** Convert a File / Blob to a base64 data URL for IndexedDB storage. */
 export function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
