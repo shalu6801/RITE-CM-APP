@@ -98,6 +98,12 @@ export const MARKSHEET_POS = {
 
   percentage:                { x:  44,   y: 244.5 } as FieldPos,
   grade:                     { x: 132,   y: 244.5 } as FieldPos,
+
+  /** Candidate photo — 1.5 in × 1.5 in (38.1 mm) at the marksheet top-right. */
+  photo:                     { x: 160,   y:  20,   widthMm: 38.1, heightMm: 38.1 } as PhotoBox,
+
+  /** Issued date — sits ABOVE the pre-printed "Palwal, HR" / place line at the bottom. */
+  issuedDate:                { x:  30,   y: 270,   maxWidth: 80 } as FieldPos,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────
@@ -114,7 +120,8 @@ export const CERTIFICATE_POS = {
   authorisedTrainingCentre:  { x:  77,   y: 169   , maxWidth: 110 } as FieldPos,
   grade:                     { x:  77,   y: 178.5 , maxWidth: 110 } as FieldPos,
   issuedDate:                { x:  77,   y: 188   , maxWidth: 110 } as FieldPos,
-  photo:                     { x: 160,   y:  20  , widthMm: 35, heightMm: 45 } as PhotoBox,
+  /** Candidate photo — 1.5 in × 1.5 in (38.1 mm), square. */
+  photo:                     { x: 160,   y:  20  , widthMm: 38.1, heightMm: 38.1 } as PhotoBox,
 
   /**
    * Verification QR code on the certificate, sitting BELOW the "Seal of RITE
@@ -139,6 +146,8 @@ export const MARKSHEET_FIELDS: { key: string; label: string }[] = [
   { key: "totalRowObtained",          label: "Total — Marks Obtained" },
   { key: "percentage",                label: "Percentage" },
   { key: "grade",                     label: "Grade" },
+  { key: "issuedDate",                label: "Issued Date" },
+  { key: "photo",                     label: "Photo box" },
 ];
 
 /**

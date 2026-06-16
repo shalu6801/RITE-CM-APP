@@ -4,7 +4,7 @@ import { COLUMN_OFFSET_KEY, DEFAULT_TEXT, MARKSHEET_POS } from "../positions";
 import type { TableColumnConfig } from "../positions";
 import type { LineOffsets } from "../types";
 import type { AppSettings, ModuleRow, PrintMode, StudentRecord } from "../types";
-import { computeMarksSummary } from "../utils";
+import { computeMarksSummary, displayDate } from "../utils";
 
 interface Props {
   record: StudentRecord;
@@ -48,6 +48,7 @@ export default function MarksheetPreview({ record, settings, printMode, printAct
 
   const t = MARKSHEET_POS.table;
   const tableOff = lineOff["table"] ?? { x: 0, y: 0 };
+  const photoOff = lineOff["photo"] ?? { x: 0, y: 0 };
   /**
    * Two independent offsets, one per total cell — each only moves its own value.
    * Persisted under the same `marksheetLineOffsets` map as the other per-line nudges.
@@ -63,6 +64,30 @@ export default function MarksheetPreview({ record, settings, printMode, printAct
       <div className="field" style={fieldStyle(MARKSHEET_POS.sNo, "sNo", { fontSize: "11.5pt" })}>
         {record.marksheetSNo}
       </div>
+
+      {/* Candidate photo — 1.5 in × 1.5 in (38.1 mm), top-right. Outside the
+          body overlay so it stays aligned with the printed template box. */}
+      {record.photo && (
+        <div
+          style={{
+            position: "absolute",
+            left: `${MARKSHEET_POS.photo.x + photoOff.x}mm`,
+            top: `${MARKSHEET_POS.photo.y + photoOff.y}mm`,
+            width: `${MARKSHEET_POS.photo.widthMm}mm`,
+            height: `${MARKSHEET_POS.photo.heightMm}mm`,
+            overflow: "hidden",
+            border: "0.5mm solid #1f2937",
+            background: "#ffffff",
+          }}
+        >
+          <img
+            src={record.photo}
+            alt=""
+            draggable={false}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+      )}
 
       <div className="page-a4__overlay" style={overlayStyle}>
         <div className="field" style={fieldStyle(MARKSHEET_POS.registrationNo, "registrationNo")}>
@@ -122,6 +147,11 @@ export default function MarksheetPreview({ record, settings, printMode, printAct
         </div>
         <div className="field" style={fieldStyle(MARKSHEET_POS.grade, "grade", { fontWeight: 700 })}>
           {record.grade || summary.grade}
+        </div>
+
+        {/* Issued Date — printed ABOVE the pre-printed "Palwal, HR" / place line. */}
+        <div className="field" style={fieldStyle(MARKSHEET_POS.issuedDate, "issuedDate")}>
+          {record.issuedDate ? `Date: ${displayDate(record.issuedDate)}` : ""}
         </div>
       </div>
     </div>
@@ -219,6 +249,10 @@ function Cell({
     alignItems: "center",
     justifyContent: col.align === "center" ? "center" : col.align === "right" ? "flex-end" : "flex-start",
     transform: ofs ? `translate(${ofs.x}mm, ${ofs.y}mm)` : undefined,
+    // Subject column gets double line-spacing so wrapped subject text is
+    // readable without compressing into the next row. Other columns keep
+    // the table-default 1.25 so the page layout is undisturbed.
+    lineHeight: col.key === "subject" ? 2 : undefined,
   };
   return <div style={style}>{children}</div>;
 }
