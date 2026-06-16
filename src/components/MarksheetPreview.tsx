@@ -221,9 +221,14 @@ function SubjectTable({
     totalRows >= 11 ? Math.max(8.5, fontSize - 1) :
     fontSize;
 
+  // Rows take their natural content height instead of stretching to fill
+  // the whole 84mm area. With `flex: 1 1 0` (the old behaviour) every row
+  // expanded equally, so 4 subjects produced 20mm-tall rows with the text
+  // floating in the middle — visually a giant gap between subjects. Natural
+  // height + a sensible minHeight gives a compact, readable table.
   const flexRow: React.CSSProperties = {
-    flex: "1 1 0",
-    minHeight: 0,
+    flex: "0 0 auto",
+    minHeight: "6.5mm",
     display: "flex",
     alignItems: "stretch",
     overflow: "hidden",
@@ -289,9 +294,10 @@ function Cell({
     // Subject column gets double line-spacing so wrapped subject text is
     // readable without compressing into the next row. Other columns keep
     // the table-default 1.25 so the page layout is undisturbed.
-    // Subject column gets a 1.5 line-height for readable wrapping without
-    // making the table look gappy. Other columns inherit the table-default 1.25.
-    lineHeight: col.key === "subject" ? 1.5 : undefined,
+    // Subject column gets a 1.3 line-height — readable for wrapped subject
+    // names without adding visible gap. Other columns inherit the
+    // table-default 1.25.
+    lineHeight: col.key === "subject" ? 1.3 : undefined,
   };
   return <div style={style}>{children}</div>;
 }
