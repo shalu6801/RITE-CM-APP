@@ -1,53 +1,39 @@
 /**
  * ─────────────────────────────────────────────────────────────────────────
- *  RITE — OTP / Login backend
+ *  RITE — Email + Password authentication backend
  * ─────────────────────────────────────────────────────────────────────────
  *
  *  Endpoints (all JSON):
  *
- *    POST /api/auth/send-otp        { identity }
- *    POST /api/auth/verify-otp      { identity, otp }
- *    POST /api/auth/login-password  { identity, password }
- *    POST /api/auth/reset-password  { identity, otp, newPassword }
+ *    POST /api/auth/register        { email, password }
+ *    POST /api/auth/login           { email, password }
  *    GET  /api/auth/whoami          (Authorization: Bearer <jwt>)
  *
- *  OTPs are stored in-memory with a 5-min expiry, single-use, 5-attempt cap.
- *  Passwords are bcrypt-hashed and persisted to passwords.json next to this
- *  file. Sessions are issued as JWTs signed with JWT_SECRET.
- *
- *  When neither GMAIL_APP_PASSWORD nor FAST2SMS_API_KEY is set, the server
- *  drops into "console mode" — it prints OTPs to your terminal instead of
- *  sending them. Great for local development. NEVER ship to production
- *  without a real provider configured.
+ *  Passwords are bcrypt-hashed and persisted to Postgres (auth_passwords
+ *  table) when DATABASE_URL is set, otherwise to passwords.json next to this
+ *  file (development only). Sessions are issued as JWTs signed with
+ *  JWT_SECRET and live for 7 days.
  */
 const express       = require("express");
 const cors          = require("cors");
 const rateLimit     = require("express-rate-limit");
 const jwt           = require("jsonwebtoken");
 const bcrypt        = require("bcrypt");
-const nodemailer    = require("nodemailer");
 const fs            = require("fs");
 const path          = require("path");
-const crypto        = require("crypto");
 const { Pool }      = require("pg");
 require("dotenv").config();
 
 // ─── Constants ──────────────────────────────────────────────────────
-const ALLOWED_IDENTITIES = new Set([
-  "riteeducational@gmail.com",
-  "9812828132",
-  "9354276055",
-]);
-const OTP_TTL_MS         = 5 * 60 * 1000;       // 5 minutes
-const OTP_MAX_ATTEMPTS   = 5;
 const PASSWORD_FILE      = path.join(__dirname, "passwords.json");
 const JWT_TTL            = "7d";
+const MIN_PASSWORD_LEN   = 6;
+const BCRYPT_ROUNDS      = 10;
 
 // ─── Helpers ────────────────────────────────────────────────────────
-function isEmail(s)      { return /@/.test(s); }
-function isPhone(s)      { return /^[6-9]\d{9}$/.test(s); }
-function normalizeIdentity(s) { return String(s || "").trim().toLowerCase(); }
-function generateOtp()   { return String(crypto.randomInt(100000, 1000000)); }   // 6 digits
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isEmail(s) { return EMAIL_RE.test(String(s || "")); }
+function normalizeEmail(s) { return String(s || "").trim().toLowerCase(); }
 
 function loadPasswords() {
   try { return JSON.parse(fs.readFileSync(PASSWORD_FILE, "utf8")); } catch { return {}; }
@@ -56,89 +42,7 @@ function savePasswords(p) {
   fs.writeFileSync(PASSWORD_FILE, JSON.stringify(p, null, 2));
 }
 
-// ─── Providers ──────────────────────────────────────────────────────
-const emailReady = !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
-const smsReady   = !!process.env.FAST2SMS_API_KEY;
-const consoleMode = !emailReady && !smsReady;
-
-if (consoleMode) {
-  console.warn("⚠  No provider configured — running in CONSOLE MODE.");
-  console.warn("    OTPs will be printed to this terminal. Configure GMAIL_APP_PASSWORD");
-  console.warn("    and/or FAST2SMS_API_KEY in backend/.env to enable real delivery.");
-}
-
-let mailer = null;
-if (emailReady) {
-  mailer = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-    connectionTimeout: 10000,  // 10s to open TCP connection
-    greetingTimeout: 10000,    // 10s for SMTP greeting
-    socketTimeout: 15000,      // 15s of inactivity
-  });
-
-  // Boot pe SMTP test karo — logs mein turant pata chal jayega
-  mailer.verify()
-    .then(() => console.log("✅  Gmail SMTP ready"))
-    .catch((e) => console.error("❌  Gmail SMTP verify failed:", e.message));
-}
-
-async function sendEmailOtp(to, otp) {
-  if (!mailer) throw new Error("Email provider not configured.");
-  await mailer.sendMail({
-    from: `RITE CM APP <${process.env.GMAIL_USER}>`,
-    to,
-    subject: "Your OTP for RITE CM APP",
-    text:
-      `Your one-time password is ${otp}.\n` +
-      `It expires in 5 minutes and can be used only once.\n\n` +
-      `If you did not request this, please ignore.`,
-    html:
-      `<p>Your one-time password is <strong style="font-size:1.4em;letter-spacing:.15em">${otp}</strong>.</p>` +
-      `<p>It expires in 5 minutes and can be used only once.</p>` +
-      `<p style="color:#888">If you did not request this, please ignore.</p>`,
-  });
-}
-
-async function sendSmsOtp(phone, otp) {
-  if (!smsReady) throw new Error("SMS provider not configured.");
-  const params = new URLSearchParams({
-    authorization: process.env.FAST2SMS_API_KEY,
-    sender_id: process.env.FAST2SMS_SENDER_ID || "FSTSMS",
-    message: `Your RITE CM APP OTP is ${otp}. Valid for 5 minutes. Do not share.`,
-    language: "english",
-    route: "q",
-    numbers: phone,
-  });
-  const res = await fetch(`https://www.fast2sms.com/dev/bulkV2?${params}`);
-  const json = await res.json();
-  if (!json.return) throw new Error("Fast2SMS error: " + JSON.stringify(json));
-}
-
-async function dispatchOtp(identity, otp) {
-  if (consoleMode) {
-    console.log(`\n  📨  OTP for ${identity}  →  ${otp}\n`);
-    return { channel: "console" };
-  }
-  if (isEmail(identity)) {
-    if (!emailReady) { console.log(`(no email provider) ${identity} → ${otp}`); return { channel: "console" }; }
-    await sendEmailOtp(identity, otp);
-    return { channel: "email" };
-  }
-  if (isPhone(identity)) {
-    if (!smsReady) { console.log(`(no sms provider) ${identity} → ${otp}`); return { channel: "console" }; }
-    await sendSmsOtp(identity, otp);
-    return { channel: "sms" };
-  }
-  throw new Error("Unrecognised identity format.");
-}
-
-// ─── Postgres (records sync) ────────────────────────────────────────
+// ─── Postgres (records sync + passwords) ────────────────────────────
 const dbReady = !!process.env.DATABASE_URL;
 const pool = dbReady
   ? new Pool({
@@ -208,48 +112,27 @@ async function initSchema() {
 }
 
 // ─── Password storage (Postgres in prod, JSON file in dev) ──────────
-async function getPasswordRecord(identity) {
+async function getPasswordRecord(email) {
   if (dbReady) {
-    const r = await pool.query("SELECT hash FROM auth_passwords WHERE identity = $1", [identity]);
+    const r = await pool.query("SELECT hash FROM auth_passwords WHERE identity = $1", [email]);
     return r.rows[0] ? { hash: r.rows[0].hash } : null;
   }
   const all = loadPasswords();
-  return all[identity] || null;
+  return all[email] || null;
 }
-async function setPasswordRecord(identity, hash) {
+async function setPasswordRecord(email, hash) {
   if (dbReady) {
     await pool.query(
       `INSERT INTO auth_passwords (identity, hash, updated_at) VALUES ($1, $2, $3)
        ON CONFLICT (identity) DO UPDATE
          SET hash = EXCLUDED.hash, updated_at = EXCLUDED.updated_at`,
-      [identity, hash, Date.now()],
+      [email, hash, Date.now()],
     );
     return;
   }
   const all = loadPasswords();
-  all[identity] = { hash, updatedAt: Date.now() };
+  all[email] = { hash, updatedAt: Date.now() };
   savePasswords(all);
-}
-
-// ─── OTP store (in-memory) ──────────────────────────────────────────
-const otpStore = new Map();   // identity → { hash, expiry, attempts }
-
-function setOtp(identity, otp) {
-  otpStore.set(identity, {
-    hash: bcrypt.hashSync(otp, 8),
-    expiry: Date.now() + OTP_TTL_MS,
-    attempts: 0,
-  });
-}
-function consumeOtp(identity, otp) {
-  const rec = otpStore.get(identity);
-  if (!rec) return { ok: false, reason: "no_otp" };
-  if (Date.now() > rec.expiry) { otpStore.delete(identity); return { ok: false, reason: "expired" }; }
-  if (rec.attempts >= OTP_MAX_ATTEMPTS) { otpStore.delete(identity); return { ok: false, reason: "too_many_attempts" }; }
-  rec.attempts += 1;
-  if (!bcrypt.compareSync(String(otp), rec.hash)) return { ok: false, reason: "wrong_otp" };
-  otpStore.delete(identity);   // single use
-  return { ok: true };
 }
 
 // ─── App ────────────────────────────────────────────────────────────
@@ -262,17 +145,7 @@ app.set("trust proxy", 1);
 app.use(express.json({ limit: "16kb" }));
 app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:5173", credentials: false }));
 
-const otpLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 5, standardHeaders: true, legacyHeaders: false });
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
-
-function requireAllowed(req, res) {
-  const id = normalizeIdentity(req.body && req.body.identity);
-  if (!id || !ALLOWED_IDENTITIES.has(id)) {
-    res.status(403).json({ ok: false, error: "Identity not allowed." });
-    return null;
-  }
-  return id;
-}
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
 
 function requireAuth(req, res, next) {
   const header = req.headers.authorization || "";
@@ -292,53 +165,48 @@ function requireDb(_req, res, next) {
   next();
 }
 
-// ─── Routes ─────────────────────────────────────────────────────────
-app.post("/api/auth/send-otp", otpLimiter, async (req, res) => {
-  const identity = requireAllowed(req, res); if (!identity) return;
-  const otp = generateOtp();
-  setOtp(identity, otp);
-  try {
-    const result = await dispatchOtp(identity, otp);
-    res.json({ ok: true, channel: result.channel });
-  } catch (err) {
-    otpStore.delete(identity);
-    res.status(502).json({ ok: false, error: "Could not deliver OTP. " + err.message });
-  }
-});
+function signToken(email) {
+  return jwt.sign({ sub: email }, process.env.JWT_SECRET || "dev-secret", { expiresIn: JWT_TTL });
+}
 
-app.post("/api/auth/verify-otp", loginLimiter, (req, res) => {
-  const identity = requireAllowed(req, res); if (!identity) return;
-  const { otp } = req.body || {};
-  const r = consumeOtp(identity, otp);
-  if (!r.ok) return res.status(400).json({ ok: false, error: r.reason });
-  const token = jwt.sign({ sub: identity }, process.env.JWT_SECRET || "dev-secret", { expiresIn: JWT_TTL });
-  res.json({ ok: true, token, identity });
-});
-
-app.post("/api/auth/login-password", loginLimiter, async (req, res) => {
-  const identity = requireAllowed(req, res); if (!identity) return;
+// ─── Auth routes ────────────────────────────────────────────────────
+app.post("/api/auth/register", authLimiter, async (req, res) => {
+  const email = normalizeEmail(req.body && req.body.email);
   const { password } = req.body || {};
+  if (!email || !isEmail(email)) return res.status(400).json({ ok: false, error: "invalid_email" });
   if (!password) return res.status(400).json({ ok: false, error: "missing_password" });
-  const rec = await getPasswordRecord(identity);
-  if (!rec) return res.status(400).json({ ok: false, error: "no_password_set" });
-  const ok = await bcrypt.compare(String(password), rec.hash);
-  if (!ok) return res.status(400).json({ ok: false, error: "wrong_password" });
-  const token = jwt.sign({ sub: identity }, process.env.JWT_SECRET || "dev-secret", { expiresIn: JWT_TTL });
-  res.json({ ok: true, token, identity });
-});
-
-app.post("/api/auth/reset-password", loginLimiter, async (req, res) => {
-  const identity = requireAllowed(req, res); if (!identity) return;
-  const { otp, newPassword } = req.body || {};
-  if (!newPassword || String(newPassword).length < 6) {
+  if (String(password).length < MIN_PASSWORD_LEN) {
     return res.status(400).json({ ok: false, error: "weak_password" });
   }
-  const r = consumeOtp(identity, otp);
-  if (!r.ok) return res.status(400).json({ ok: false, error: r.reason });
-  const hash = await bcrypt.hash(String(newPassword), 10);
-  await setPasswordRecord(identity, hash);
-  const token = jwt.sign({ sub: identity }, process.env.JWT_SECRET || "dev-secret", { expiresIn: JWT_TTL });
-  res.json({ ok: true, token, identity });
+  try {
+    const existing = await getPasswordRecord(email);
+    if (existing) return res.status(409).json({ ok: false, error: "email_already_exists" });
+    const hash = await bcrypt.hash(String(password), BCRYPT_ROUNDS);
+    await setPasswordRecord(email, hash);
+    const token = signToken(email);
+    res.json({ ok: true, token, identity: email });
+  } catch (err) {
+    console.error("register failed:", err);
+    res.status(500).json({ ok: false, error: "register_failed" });
+  }
+});
+
+app.post("/api/auth/login", authLimiter, async (req, res) => {
+  const email = normalizeEmail(req.body && req.body.email);
+  const { password } = req.body || {};
+  if (!email || !isEmail(email)) return res.status(400).json({ ok: false, error: "invalid_email" });
+  if (!password) return res.status(400).json({ ok: false, error: "missing_password" });
+  try {
+    const rec = await getPasswordRecord(email);
+    if (!rec) return res.status(400).json({ ok: false, error: "user_not_found" });
+    const ok = await bcrypt.compare(String(password), rec.hash);
+    if (!ok) return res.status(400).json({ ok: false, error: "wrong_password" });
+    const token = signToken(email);
+    res.json({ ok: true, token, identity: email });
+  } catch (err) {
+    console.error("login failed:", err);
+    res.status(500).json({ ok: false, error: "login_failed" });
+  }
 });
 
 app.get("/api/auth/whoami", (req, res) => {
@@ -417,7 +285,7 @@ app.post("/api/sync/push", requireAuth, requireDb, syncJson, async (req, res) =>
 });
 
 app.get("/api/health", (_req, res) =>
-  res.json({ ok: true, mode: consoleMode ? "console" : "live", db: dbReady })
+  res.json({ ok: true, db: dbReady })
 );
 
 const PORT = Number(process.env.PORT) || 4000;
@@ -425,7 +293,6 @@ const PORT = Number(process.env.PORT) || 4000;
   try { await initSchema(); }
   catch (err) { console.error("⚠  initSchema failed:", err.message); }
   app.listen(PORT, () => {
-    console.log(`\n  ✅  RITE auth backend listening on http://localhost:${PORT}`);
-    console.log(`     Allowed identities: ${[...ALLOWED_IDENTITIES].join(", ")}\n`);
+    console.log(`\n  ✅  RITE auth backend listening on http://localhost:${PORT}\n`);
   });
 })();

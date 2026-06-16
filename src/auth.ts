@@ -11,7 +11,6 @@ export interface AuthResult {
   ok: boolean;
   token?: string;
   identity?: string;
-  channel?: "email" | "sms" | "console";
   error?: string;
 }
 
@@ -31,11 +30,8 @@ async function post(path: string, body: any): Promise<AuthResult> {
 }
 
 export const auth = {
-  sendOtp:        (identity: string) => post("/api/auth/send-otp", { identity }),
-  verifyOtp:      (identity: string, otp: string) => post("/api/auth/verify-otp", { identity, otp }),
-  loginPassword:  (identity: string, password: string) => post("/api/auth/login-password", { identity, password }),
-  resetPassword:  (identity: string, otp: string, newPassword: string) =>
-                    post("/api/auth/reset-password", { identity, otp, newPassword }),
+  login:    (email: string, password: string) => post("/api/auth/login", { email, password }),
+  register: (email: string, password: string) => post("/api/auth/register", { email, password }),
 };
 
 export function getStoredToken(): string | null   { return localStorage.getItem(TOKEN_KEY); }

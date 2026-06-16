@@ -87,9 +87,6 @@ git push -u origin main
 | `PORT` | `4000` |
 | `CORS_ORIGIN` | `https://your-domain.com` *(update after Step 4)* |
 | `JWT_SECRET` | run `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` and paste the output |
-| `GMAIL_USER` | `riteeducational@gmail.com` |
-| `GMAIL_APP_PASSWORD` | your 16-char Gmail app password |
-| `FAST2SMS_API_KEY` | (optional) your Fast2SMS key |
 | `DATABASE_URL` | the Neon URL from Step 1 |
 
 4. Click **Create Web Service**. Wait 2–3 min for the first deploy.
@@ -98,7 +95,7 @@ git push -u origin main
    ```
    https://rite-backend.onrender.com/api/health
    ```
-   Expected response: `{"ok":true,"mode":"live","db":true}`
+   Expected response: `{"ok":true,"db":true}`
 
 > **Heads up — Render free tier sleeps after 15 min of no traffic.** The first request after that takes ~30 s to wake. For an active centre, upgrade to the $7/month Starter plan (no sleep).
 

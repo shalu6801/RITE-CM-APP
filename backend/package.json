@@ -2,7 +2,7 @@
   "name": "rite-auth-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Tiny OTP/login backend for RITE Computer Education — Document Studio.",
+  "description": "Tiny email+password auth backend for RITE Computer Education — Document Studio.",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -16,7 +16,6 @@
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^6.9.15",
     "pg": "^8.21.0"
   }
 }
