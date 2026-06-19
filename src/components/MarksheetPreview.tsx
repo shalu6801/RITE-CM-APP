@@ -233,8 +233,9 @@ function SubjectTable({
   // floating in the middle — visually a giant gap between subjects. Natural
   // height + a sensible minHeight gives a compact, readable table.
   const flexRow: React.CSSProperties = {
-    flex: "1 1 0",
-    minHeight: "14mm",
+    flex: "0 0 auto",
+    minHeight: "12mm",
+    marginBottom: "4mm",
     display: "flex",
     alignItems: "stretch",
     overflow: "hidden",
