@@ -3,7 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../db";
 import { useUI } from "../store";
 import type { SimpleKind } from "../types";
-import { computeMarksSummary } from "../utils";
+import { computeMarksSummary, sortMasterValues } from "../utils";
 import Combobox from "./Combobox";
 import ModuleTable from "./ModuleTable";
 import PhotoField from "./PhotoField";
@@ -264,7 +264,7 @@ function useSimpleList(kind: SimpleKind): string[] {
   // and pre-existing databases can hold duplicates from older seeding races.
   return useMemo(() => {
     const unique = Array.from(new Set((items ?? []).map((i) => i.value)));
-    return unique.sort((a, b) => a.localeCompare(b));
+    return sortMasterValues(kind, unique);
   }, [items]);
 }
 

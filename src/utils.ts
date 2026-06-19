@@ -88,6 +88,25 @@ export function deriveModulesCovered(modules: ModuleRow[]): string {
     .join(", ");
 }
 
+export function sortMasterValues(kind: string, values: string[]): string[] {
+  if (kind !== "duration") return values.slice().sort((a, b) => a.localeCompare(b));
+
+  const durationRank = (value: string): number => {
+    const text = value.toLowerCase().trim();
+    if (/year/.test(text)) {
+      const years = parseInt(text, 10);
+      return Number.isFinite(years) ? years * 12 : Number.MAX_SAFE_INTEGER;
+    }
+    const months = parseInt(text, 10);
+    return Number.isFinite(months) ? months : Number.MAX_SAFE_INTEGER;
+  };
+
+  return values.slice().sort((a, b) => {
+    const byDuration = durationRank(a) - durationRank(b);
+    return byDuration || a.localeCompare(b);
+  });
+}
+
 /**
  * Maps a course duration string to the number of modules the marksheet should
  * use. RITE's curriculum convention:

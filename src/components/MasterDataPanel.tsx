@@ -9,9 +9,9 @@ import {
   renameSimpleMaster,
   updateCourse,
 } from "../db";
-import type { CourseMaster, CourseModule, CourseSubject, SimpleKind } from "../types";
+import type { CourseMaster, CourseModule, CourseSubject, SimpleKind, SimpleMasterValue } from "../types";
 import { useUI } from "../store";
-import { uid } from "../utils";
+import { sortMasterValues, uid } from "../utils";
 import { IconPlus, IconTrash } from "./Icons";
 
 const KIND_LABELS: Record<SimpleKind, { label: string; placeholder: string; hint: string }> = {
@@ -381,7 +381,10 @@ function SimpleListEditor({ kind }: { kind: SimpleKind }) {
     [kind],
     [],
   );
-  const sorted = (items ?? []).slice().sort((a, b) => a.value.localeCompare(b.value));
+  const sortedValues = sortMasterValues(kind, (items ?? []).map((item) => item.value));
+  const sorted = sortedValues
+    .map((value) => (items ?? []).find((item) => item.value === value))
+    .filter((item): item is SimpleMasterValue => Boolean(item));
   const [newValue, setNewValue] = useState("");
   const meta = KIND_LABELS[kind];
 

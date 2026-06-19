@@ -35,13 +35,13 @@ export default function PhotoField({ value, onChange, onClear }: PhotoFieldProps
         type="button"
         onClick={() => fileRef.current?.click()}
         className={[
-          "group relative h-[150px] w-[120px] overflow-hidden rounded-lg border-2 border-dashed",
+          "group relative h-[38.1mm] w-[38.1mm] overflow-hidden rounded-lg border-2 border-dashed",
           value ? "border-ink-200 bg-white" : "border-ink-200 bg-ink-50 hover:border-brand-400 hover:bg-brand-50/40",
         ].join(" ")}
         aria-label={value ? "Replace photo" : "Upload photo"}
       >
         {value ? (
-          <img src={value} alt="Candidate" className="h-full w-full object-cover" />
+          <img src={value} alt="Candidate" className="h-full w-full object-contain" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center px-3 text-center text-[11px] text-ink-500">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="mb-2 text-ink-400">
@@ -50,7 +50,7 @@ export default function PhotoField({ value, onChange, onClear }: PhotoFieldProps
               <path d="M21 16l-5-5-9 9" />
             </svg>
             <span className="font-medium text-ink-700">Upload photo</span>
-            <span>35 × 45 mm (passport)</span>
+            <span>1.5 inch x 1.5 inch</span>
           </div>
         )}
         {value && (

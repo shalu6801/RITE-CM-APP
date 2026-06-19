@@ -74,7 +74,7 @@ export default function CertificatePreview({ record, settings, printMode, printA
             src={record.photo}
             alt=""
             draggable={false}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
           />
         </div>
       )}
