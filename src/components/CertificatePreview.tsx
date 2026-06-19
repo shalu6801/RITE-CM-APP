@@ -66,15 +66,22 @@ export default function CertificatePreview({ record, settings, printMode, printA
             width: `${CERTIFICATE_POS.photo.widthMm}mm`,
             height: `${CERTIFICATE_POS.photo.heightMm}mm`,
             overflow: "hidden",
-            border: "0.5mm solid #1f2937",
             background: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <img
             src={record.photo}
             alt=""
             draggable={false}
-            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              objectFit: "contain",
+              border: "0.5mm solid #1f2937",
+            }}
           />
         </div>
       )}
