@@ -218,13 +218,7 @@ function SubjectTable({
     }
     groups[idx].rows.push(row);
   }
-  const totalRows = groups.length + rows.length;
-
-  const dynamicFontPt =
-    totalRows >= 14 ? Math.max(8, fontSize - 1.5) :
-    totalRows >= 11 ? Math.max(8.5, fontSize - 1) :
-    fontSize;
-  const displayFontPt = Math.min(dynamicFontPt + 1, 11.5);
+  const displayFontPt = Math.min(fontSize + 1, 11.5);
   const lineStyle: React.CSSProperties = { minHeight: "4mm", lineHeight: 1.15 };
 
   // Rows take their natural content height instead of stretching to fill
