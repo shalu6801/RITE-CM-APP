@@ -238,13 +238,14 @@ function SubjectTable({
     overflow: "hidden",
   };
 
-  let sno = 0;
+  let moduleSno = 0;
   const elements: React.ReactNode[] = [];
   for (const group of groups) {
     if (group.moduleName) {
+      moduleSno++;
       elements.push(
         <div key={`module-${group.moduleName}`} style={flexRow}>
-          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt} />
+          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>{moduleSno}.</Cell>
           <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt} bold>
             {group.moduleName}:
           </Cell>
@@ -254,10 +255,9 @@ function SubjectTable({
       );
     }
     for (const m of group.rows) {
-      sno++;
       elements.push(
         <div key={m.id} style={flexRow}>
-          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>{sno}.</Cell>
+          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt} />
           <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt}>{m.subject}</Cell>
           <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt}>{m.maxMarks || ""}</Cell>
           <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt}>{Number.isFinite(m.marksObtained) ? m.marksObtained : ""}</Cell>

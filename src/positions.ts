@@ -100,7 +100,7 @@ export const MARKSHEET_POS = {
   grade:                     { x: 132,   y: 244.5 } as FieldPos,
 
   /** Candidate photo — 1.5 in × 1.5 in (38.1 mm) at the marksheet top-right. */
-  photo:                     { x: 160,   y:  20,   widthMm: 38.1, heightMm: 38.1 } as PhotoBox,
+  photo:                     { x: 160,   y:  20,   widthMm: 25.4, heightMm: 25.4 } as PhotoBox,
 
   /** Issued date — sits ABOVE the pre-printed "Palwal, HR" / place line at the bottom. */
   issuedDate:                { x:  30,   y: 270,   maxWidth: 80 } as FieldPos,
@@ -121,7 +121,7 @@ export const CERTIFICATE_POS = {
   grade:                     { x:  77,   y: 178.5 , maxWidth: 110 } as FieldPos,
   issuedDate:                { x:  77,   y: 188   , maxWidth: 110 } as FieldPos,
   /** Candidate photo — 1.5 in × 1.5 in (38.1 mm), square. */
-  photo:                     { x: 160,   y:  20  , widthMm: 38.1, heightMm: 38.1 } as PhotoBox,
+  photo:                     { x: 160,   y:  20  , widthMm: 25.4, heightMm: 25.4 } as PhotoBox,
 
   /**
    * Verification QR code on the certificate, sitting BELOW the "Seal of RITE

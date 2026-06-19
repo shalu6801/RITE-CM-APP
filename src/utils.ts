@@ -127,7 +127,7 @@ export function moduleCountForDuration(duration: string): number {
   const months = parseInt(d, 10);
   switch (months) {
     case 1:  return 1;
-    case 3:  return 2;
+    case 3:  return 1;
     case 6:  return 2;
     case 9:  return 3;
     case 12: return 4;
