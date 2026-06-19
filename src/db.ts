@@ -22,7 +22,7 @@ function seedSyncId(kind: string, value: string): string {
 }
 
 const DEFAULT_GRADES    = ["Excellent", "Very Good", "Satisfactory", "Fail"];
-const DEFAULT_DURATIONS = ["1 Month", "3 Months", "6 Months", "9 Months", "12 Months", "1 Year"];
+const DEFAULT_DURATIONS = ["1 Month", "3 Months", "6 Months", "9 Months", "12 Months"];
 const DEFAULT_CENTRES   = ["RITE Computer Education, Palwal (HR.)"];
 
 function isSeedDefault(kind: string, value: string): boolean {
@@ -265,6 +265,10 @@ export async function seedMasterDefaults(): Promise<void> {
     const toDelete: number[] = [];
     for (const row of all) {
       const key = `${row.kind}::${row.value}`;
+      if (row.kind === "duration" && row.value === "1 Year") {
+        if (row.id != null) await db.simpleMaster.update(row.id, { deleted: 1 });
+        continue;
+      }
       if (seen.has(key)) {
         if (row.id != null) toDelete.push(row.id);
       } else {

@@ -173,10 +173,10 @@ export const useUI = create<UIState>((set, get) => ({
     set((state) => ({
       draft: {
         ...state.draft,
-        modulesCovered: state.draft.modules
-          .map((m) => m.subject.trim())
+        modulesCovered: Array.from(new Set(state.draft.modules
+          .map((m) => (m.moduleName || m.subject).trim())
           .filter(Boolean)
-          .join(", "),
+        )).join(", "),
         updatedAt: Date.now(),
       },
     }));
@@ -220,9 +220,7 @@ export const useUI = create<UIState>((set, get) => ({
       marksObtained: 0,
       moduleName: s.moduleName,
     }));
-    // Certificate's "Modules Covered" lists the SUBJECT names from every module
-    // (matches what the "Auto-fill from modules table" button produces too).
-    const modulesCovered = allSubjects.map((s) => s.name).filter(Boolean).join(", ");
+    const modulesCovered = modulesToUse.map((m) => m.name.trim()).filter(Boolean).join(", ");
     set((state) => ({
       draft: { ...state.draft, modules: rows, modulesCovered, updatedAt: Date.now() },
     }));
@@ -259,7 +257,7 @@ export const useUI = create<UIState>((set, get) => ({
       marksObtained: 0,
       moduleName: s.moduleName,
     }));
-    const modulesCovered = allSubjects.map((s) => s.name).filter(Boolean).join(", ");
+    const modulesCovered = modulesToUse.map((m) => m.name.trim()).filter(Boolean).join(", ");
     set((state) => ({
       draft: { ...state.draft, modules: rows, modulesCovered, updatedAt: Date.now() },
     }));
