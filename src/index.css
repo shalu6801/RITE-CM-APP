@@ -152,11 +152,10 @@ input[type="range"] {
   }
   .print-stage .page-a4 {
     box-shadow: none !important;
-    width: 209.5mm !important;
-    height: 296.5mm !important;
+    width: 210mm !important;
+    height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    box-sizing: border-box !important;
     transform: none !important;
     overflow: hidden !important;
     page-break-before: avoid !important;
