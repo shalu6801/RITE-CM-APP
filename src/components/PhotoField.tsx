@@ -45,7 +45,11 @@ export default function PhotoField({ value, onChange, onClear }: PhotoFieldProps
             src={value}
             alt="Candidate"
             className="max-h-full max-w-full object-contain"
-            style={{ border: "0.5mm solid #1f2937" }}
+            style={{
+              maxWidth: "calc(100% - 1mm)",
+              maxHeight: "calc(100% - 1mm)",
+              border: "0.5mm solid #1f2937",
+            }}
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center px-3 text-center text-[11px] text-ink-500">

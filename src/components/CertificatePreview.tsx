@@ -77,8 +77,8 @@ export default function CertificatePreview({ record, settings, printMode, printA
             alt=""
             draggable={false}
             style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
+              maxWidth: "calc(100% - 1mm)",
+              maxHeight: "calc(100% - 1mm)",
               objectFit: "contain",
               border: "0.5mm solid #1f2937",
             }}

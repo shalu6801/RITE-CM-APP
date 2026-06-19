@@ -87,8 +87,8 @@ export default function MarksheetPreview({ record, settings, printMode, printAct
             alt=""
             draggable={false}
             style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
+              maxWidth: "calc(100% - 1mm)",
+              maxHeight: "calc(100% - 1mm)",
               objectFit: "contain",
               border: "0.5mm solid #1f2937",
             }}
@@ -208,7 +208,19 @@ function SubjectTable({
   // a bold module-name header row followed by its subject rows. Subjects
   // entered manually (no moduleName) fall into a single anonymous bucket
   // that renders without a header — keeps the legacy flat-list behaviour.
-  const totalRows = rows.length;
+  const groups: Array<{ moduleName: string; rows: ModuleRow[] }> = [];
+  const groupIndex = new Map<string, number>();
+  for (const row of rows) {
+    const key = row.moduleName?.trim() ?? "";
+    let idx = groupIndex.get(key);
+    if (idx === undefined) {
+      idx = groups.length;
+      groupIndex.set(key, idx);
+      groups.push({ moduleName: key, rows: [] });
+    }
+    groups[idx].rows.push(row);
+  }
+  const totalRows = rows.length + groups.filter((g) => g.moduleName).length;
 
   const dynamicFontPt =
     totalRows >= 14 ? Math.max(8, fontSize - 1.5) :
@@ -229,18 +241,32 @@ function SubjectTable({
   };
 
   let sno = 0;
-  const elements = rows.map((m) => {
-    sno++;
-    const subjectLabel = [m.moduleName, m.subject].map((v) => v?.trim()).filter(Boolean).join(" - ");
-    return (
-      <div key={m.id} style={flexRow}>
-        <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>{sno}.</Cell>
-        <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt}>{subjectLabel}</Cell>
-        <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt}>{m.maxMarks || ""}</Cell>
-        <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt}>{Number.isFinite(m.marksObtained) ? m.marksObtained : ""}</Cell>
-      </div>
-    );
-  });
+  const elements: React.ReactNode[] = [];
+  for (const group of groups) {
+    if (group.moduleName) {
+      elements.push(
+        <div key={`module-${group.moduleName}`} style={flexRow}>
+          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt} />
+          <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt} bold>
+            {group.moduleName}:
+          </Cell>
+          <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt} />
+          <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt} />
+        </div>,
+      );
+    }
+    for (const m of group.rows) {
+      sno++;
+      elements.push(
+        <div key={m.id} style={flexRow}>
+          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>{sno}.</Cell>
+          <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt}>{m.subject}</Cell>
+          <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt}>{m.maxMarks || ""}</Cell>
+          <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt}>{Number.isFinite(m.marksObtained) ? m.marksObtained : ""}</Cell>
+        </div>,
+      );
+    }
+  }
 
   return <div style={containerStyle}>{elements}</div>;
 }
