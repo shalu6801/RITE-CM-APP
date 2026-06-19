@@ -224,6 +224,8 @@ function SubjectTable({
     totalRows >= 14 ? Math.max(8, fontSize - 1.5) :
     totalRows >= 11 ? Math.max(8.5, fontSize - 1) :
     fontSize;
+  const displayFontPt = Math.min(dynamicFontPt + 1, 11.5);
+  const lineStyle: React.CSSProperties = { minHeight: "4mm", lineHeight: 1.15 };
 
   // Rows take their natural content height instead of stretching to fill
   // the whole 84mm area. With `flex: 1 1 0` (the old behaviour) every row
@@ -241,26 +243,39 @@ function SubjectTable({
   let moduleSno = 0;
   const elements: React.ReactNode[] = [];
   for (const group of groups) {
-    const maxMarks = group.rows.reduce((sum, row) => sum + (Number.isFinite(row.maxMarks) ? row.maxMarks : 0), 0);
-    const marksObtained = group.rows.reduce((sum, row) => sum + (Number.isFinite(row.marksObtained) ? row.marksObtained : 0), 0);
     if (group.moduleName) {
       moduleSno++;
     }
+    const hasModuleHeading = Boolean(group.moduleName);
     elements.push(
       <div key={`module-${group.moduleName || group.rows.map((r) => r.id).join("-")}`} style={flexRow}>
-        <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>
+        <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={displayFontPt} top>
           {group.moduleName ? `${moduleSno}.` : ""}
         </Cell>
-        <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt} top>
+        <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={displayFontPt} top>
           <div>
-            {group.moduleName && <div style={{ fontWeight: 700 }}>{group.moduleName}:</div>}
+            {group.moduleName && <div style={{ ...lineStyle, fontWeight: 700 }}>{group.moduleName}:</div>}
             {group.rows.map((row) => (
-              <div key={row.id}>{row.subject}</div>
+              <div key={row.id} style={lineStyle}>{row.subject}</div>
             ))}
           </div>
         </Cell>
-        <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt}>{maxMarks || ""}</Cell>
-        <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt}>{marksObtained || ""}</Cell>
+        <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={displayFontPt} top>
+          <div>
+            {hasModuleHeading && <div style={lineStyle} />}
+            {group.rows.map((row) => (
+              <div key={row.id} style={lineStyle}>{row.maxMarks || ""}</div>
+            ))}
+          </div>
+        </Cell>
+        <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={displayFontPt} top>
+          <div>
+            {hasModuleHeading && <div style={lineStyle} />}
+            {group.rows.map((row) => (
+              <div key={row.id} style={lineStyle}>{Number.isFinite(row.marksObtained) ? row.marksObtained : ""}</div>
+            ))}
+          </div>
+        </Cell>
       </div>,
     );
   }
