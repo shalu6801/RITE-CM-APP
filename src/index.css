@@ -125,11 +125,15 @@ input[type="range"] {
   html,
   body,
   #root {
-    width: auto !important;
-    height: auto !important;
+    width: 210mm !important;
+    min-width: 210mm !important;
+    max-width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     background: #ffffff !important;
   }
 
@@ -143,12 +147,20 @@ input[type="range"] {
     top: auto !important;
     display: block !important;
     z-index: auto !important;
-    width: auto !important;
-    height: auto !important;
+    width: 210mm !important;
+    min-width: 210mm !important;
+    max-width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     transform: none !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid-page !important;
+    break-inside: avoid-page !important;
   }
   .print-stage .page-a4 {
     box-shadow: none !important;
@@ -158,10 +170,12 @@ input[type="range"] {
     padding: 0 !important;
     transform: none !important;
     overflow: hidden !important;
-    page-break-before: avoid !important;
-    page-break-after: auto !important;
-    break-before: avoid-page !important;
-    break-after: auto !important;
+    page-break-before: auto !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-before: auto !important;
+    break-after: avoid-page !important;
+    break-inside: avoid-page !important;
   }
   /*
     Pre-printed Sheet mode prints only the filled-in fields onto a physical
