@@ -164,14 +164,11 @@ input[type="range"] {
     break-after: auto !important;
   }
   /*
-    ┌────────────────────────────────────────────────────────────────────┐
-    │ HIDE THE TEMPLATE ON PRINT — only the data goes onto paper.       │
-    │ The template image is for ON-SCREEN ALIGNMENT only; the printer  │
-    │ receives ONLY the filled-in fields, so the page lands exactly on │
-    │ the user's physical pre-printed certificate / marksheet sheet.   │
-    └────────────────────────────────────────────────────────────────────┘
+    Pre-printed Sheet mode prints only the filled-in fields onto a physical
+    template. Full Print mode keeps the template image visible so the browser
+    print output matches the live preview.
   */
-  .print-stage .page-a4__bg { display: none !important; }
+  .print-stage .page-a4.preprinted .page-a4__bg { display: none !important; }
 
   /* Force colour fidelity. */
   .page-a4, .page-a4__bg, .page-a4__overlay, .field {
@@ -180,6 +177,5 @@ input[type="range"] {
   }
 }
 
-/* Same rule applies for the PDF capture (html2canvas reads the on-screen DOM,
-   so we need the bg hidden in the print-stage even outside @media print). */
-.print-stage .page-a4__bg { display: none !important; }
+/* Same rule applies for PDF capture: html2canvas reads the on-screen DOM. */
+.print-stage .page-a4.preprinted .page-a4__bg { display: none !important; }

@@ -31,8 +31,10 @@ export async function exportActiveDocumentAsPdf(args: {
     useCORS: true,
     logging: false,
     onclone: (clonedDoc) => {
+      const clonedStage = clonedDoc.querySelector<HTMLElement>("#print-stage-root .page-a4");
       const clonedBg = clonedDoc.querySelector<HTMLElement>("#print-stage-root .page-a4__bg");
-      clonedBg?.style.setProperty("display", "block", "important");
+      const isPreprinted = clonedStage?.classList.contains("preprinted");
+      clonedBg?.style.setProperty("display", isPreprinted ? "none" : "block", "important");
     },
     // Force the canvas to be exactly stage's pixel dimensions
     windowWidth: stage.offsetWidth,
