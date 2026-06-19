@@ -218,7 +218,7 @@ function SubjectTable({
     }
     groups[idx].rows.push(row);
   }
-  const totalRows = rows.length + groups.filter((g) => g.moduleName).length;
+  const totalRows = groups.length + rows.length;
 
   const dynamicFontPt =
     totalRows >= 14 ? Math.max(8, fontSize - 1.5) :
@@ -231,8 +231,8 @@ function SubjectTable({
   // floating in the middle — visually a giant gap between subjects. Natural
   // height + a sensible minHeight gives a compact, readable table.
   const flexRow: React.CSSProperties = {
-    flex: "0 0 auto",
-    minHeight: "6.5mm",
+    flex: "1 1 0",
+    minHeight: "14mm",
     display: "flex",
     alignItems: "stretch",
     overflow: "hidden",
@@ -241,36 +241,35 @@ function SubjectTable({
   let moduleSno = 0;
   const elements: React.ReactNode[] = [];
   for (const group of groups) {
+    const maxMarks = group.rows.reduce((sum, row) => sum + (Number.isFinite(row.maxMarks) ? row.maxMarks : 0), 0);
+    const marksObtained = group.rows.reduce((sum, row) => sum + (Number.isFinite(row.marksObtained) ? row.marksObtained : 0), 0);
     if (group.moduleName) {
       moduleSno++;
-      elements.push(
-        <div key={`module-${group.moduleName}`} style={flexRow}>
-          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>{moduleSno}.</Cell>
-          <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt} bold>
-            {group.moduleName}:
-          </Cell>
-          <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt} />
-          <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt} />
-        </div>,
-      );
     }
-    for (const m of group.rows) {
-      elements.push(
-        <div key={m.id} style={flexRow}>
-          <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt} />
-          <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt}>{m.subject}</Cell>
-          <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt}>{m.maxMarks || ""}</Cell>
-          <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt}>{Number.isFinite(m.marksObtained) ? m.marksObtained : ""}</Cell>
-        </div>,
-      );
-    }
+    elements.push(
+      <div key={`module-${group.moduleName || group.rows.map((r) => r.id).join("-")}`} style={flexRow}>
+        <Cell col={columns[0]} columnOffset={colOff(columns[0].key)} fontSizePt={dynamicFontPt}>
+          {group.moduleName ? `${moduleSno}.` : ""}
+        </Cell>
+        <Cell col={columns[1]} columnOffset={colOff(columns[1].key)} fontSizePt={dynamicFontPt} top>
+          <div>
+            {group.moduleName && <div style={{ fontWeight: 700 }}>{group.moduleName}:</div>}
+            {group.rows.map((row) => (
+              <div key={row.id}>{row.subject}</div>
+            ))}
+          </div>
+        </Cell>
+        <Cell col={columns[2]} columnOffset={colOff(columns[2].key)} fontSizePt={dynamicFontPt}>{maxMarks || ""}</Cell>
+        <Cell col={columns[3]} columnOffset={colOff(columns[3].key)} fontSizePt={dynamicFontPt}>{marksObtained || ""}</Cell>
+      </div>,
+    );
   }
 
   return <div style={containerStyle}>{elements}</div>;
 }
 
 function Cell({
-  col, fontSizePt, columnOffset, children, bold,
+  col, fontSizePt, columnOffset, children, bold, top,
 }: {
   col: TableColumnConfig;
   fontSizePt: number;
@@ -278,6 +277,7 @@ function Cell({
   children?: React.ReactNode;
   /** Forces fontWeight to 700 — used by the module-name header rows. */
   bold?: boolean;
+  top?: boolean;
 }) {
   const ofs = columnOffset && (columnOffset.x || columnOffset.y) ? columnOffset : null;
   const style: React.CSSProperties = {
@@ -292,7 +292,7 @@ function Cell({
     whiteSpace: "normal",
     boxSizing: "border-box",
     display: "flex",
-    alignItems: "center",
+    alignItems: top ? "flex-start" : "center",
     justifyContent: col.align === "center" ? "center" : col.align === "right" ? "flex-end" : "flex-start",
     transform: ofs ? `translate(${ofs.x}mm, ${ofs.y}mm)` : undefined,
     // Subject column gets double line-spacing so wrapped subject text is
