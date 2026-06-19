@@ -76,7 +76,6 @@ export default function MarksheetPreview({ record, settings, printMode, printAct
             width: `${MARKSHEET_POS.photo.widthMm}mm`,
             height: `${MARKSHEET_POS.photo.heightMm}mm`,
             overflow: "hidden",
-            background: "#ffffff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -87,10 +86,9 @@ export default function MarksheetPreview({ record, settings, printMode, printAct
             alt=""
             draggable={false}
             style={{
-              maxWidth: "calc(100% - 1mm)",
-              maxHeight: "calc(100% - 1mm)",
-              objectFit: "contain",
-              border: "0.5mm solid #1f2937",
+              width: "100%",
+              height: "100%",
+              objectFit: "fill",
             }}
           />
         </div>

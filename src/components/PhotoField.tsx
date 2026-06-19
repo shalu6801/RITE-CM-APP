@@ -35,8 +35,8 @@ export default function PhotoField({ value, onChange, onClear }: PhotoFieldProps
         type="button"
         onClick={() => fileRef.current?.click()}
         className={[
-          "group relative flex h-[38.1mm] w-[38.1mm] items-center justify-center overflow-hidden rounded-lg border-2 border-dashed",
-          value ? "border-transparent bg-white" : "border-ink-200 bg-ink-50 hover:border-brand-400 hover:bg-brand-50/40",
+          "group relative flex h-[38.1mm] w-[38.1mm] items-center justify-center overflow-hidden",
+          value ? "bg-transparent" : "rounded-lg border-2 border-dashed border-ink-200 bg-ink-50 hover:border-brand-400 hover:bg-brand-50/40",
         ].join(" ")}
         aria-label={value ? "Replace photo" : "Upload photo"}
       >
@@ -44,12 +44,8 @@ export default function PhotoField({ value, onChange, onClear }: PhotoFieldProps
           <img
             src={value}
             alt="Candidate"
-            className="max-h-full max-w-full object-contain"
-            style={{
-              maxWidth: "calc(100% - 1mm)",
-              maxHeight: "calc(100% - 1mm)",
-              border: "0.5mm solid #1f2937",
-            }}
+            className="h-full w-full"
+            style={{ objectFit: "fill" }}
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center px-3 text-center text-[11px] text-ink-500">
